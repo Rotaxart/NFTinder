@@ -7,6 +7,9 @@ const {API_URL, PRIVATE_KEY, POLYGON_API_KEY} = process.env;
 module.exports = {
   solidity: "0.8.17",
   networks: {
+    localhost: {
+      blockGasLimit: 100000000429720 // whatever you want here
+  },
     mumbai: {
       url: API_URL,
       accounts: [`0x${PRIVATE_KEY}`],
