@@ -5,10 +5,10 @@ const {API_URL, PRIVATE_KEY, POLYGON_API_KEY} = process.env;
 
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
-  solidity: "0.8.17",
+  solidity: "0.8.10",
   networks: {
     localhost: {
-      blockGasLimit: 100000000429720 // whatever you want here
+      blockGasLimit: 1000000004297200 // whatever you want here
   },
     mumbai: {
       url: API_URL,

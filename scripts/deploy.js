@@ -8,13 +8,13 @@ const hre = require("hardhat");
 
 async function main() {
 
-  const LensInteractions = await hre.ethers.getContractFactory("LensInteractions");
-  const lensInteractions = await LensInteractions.deploy("0x7582177F9E536aB0b6c721e11f383C326F2Ad1D5");
+  const NFTinLogic = await hre.ethers.getContractFactory("NFTinLogic");
+  const nFTinLogic = await nFTinLogic.deploy();
 
-  await lensInteractions.deployed();
+  await nFTinLogic.deployed();
 
   console.log(
-    `lensInteractions deployed to ${lensInteractions.address}`
+    `lensInteractions deployed to ${nFTinLogic.address}`
   );
 }
 

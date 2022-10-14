@@ -47,4 +47,6 @@ interface ILensInteractions {
 
     function burn(uint256 profileId) external;
 
+    function getProfile(uint256 profileId) external view returns (DataTypes.ProfileStruct memory);
+
 }

@@ -4,16 +4,15 @@ pragma solidity ^0.8.10;
 
 import {DataTypes} from "./DataTypes.sol";
 import {ILensInteractions} from "./ILensInteractions.sol";
-import {NFTin} from "./NFTin.sol";
+import {NFTinStorage} from "./NFTinStorage.sol";
 
-contract LensInteractions is NFTin {
-
-
+contract LensInteractions is NFTinStorage {
     address public lensAddress;
 
     ILensInteractions lensHub;
 
     function setLensHubAddress(address _lensHub) public {
+        //for develop
         lensHub = ILensInteractions(_lensHub);
         lensAddress = _lensHub;
     }
@@ -38,7 +37,9 @@ contract LensInteractions is NFTin {
         (bool success, ) = lensAddress.call(
             abi.encodeWithSignature(
                 "setFollowModule(uint256,address,bytes)",
-                profileId, followModule, followModuleData
+                profileId,
+                followModule,
+                followModuleData
             )
         );
         require(success, "Transaction failed");
@@ -54,7 +55,6 @@ contract LensInteractions is NFTin {
             )
         );
         require(success, "Transaction failed");
-
     }
 
     function setDispatcher(uint256 profileId, address dispatcher) external {
@@ -79,8 +79,20 @@ contract LensInteractions is NFTin {
         lensHub.setProfileImageURIWithSig(vars);
     }
 
-    function post(DataTypes.PostData calldata vars) external {
-        lensHub.post(vars);
+    function post(DataTypes.PostData calldata vars)
+        public
+        returns (bool, uint256)
+    {
+        (bool success, bytes memory data) = lensAddress.call(
+            abi.encodeWithSignature(
+                "post((uint256,string,address,bytes,address,bytes))",
+                vars
+            )
+        );
+
+        return (success, uint256(bytes32(data))
+            // abi.decode(data, (uint256))
+        );
     }
 
     function postWithSig(DataTypes.PostWithSigData calldata vars) external {
@@ -139,15 +151,41 @@ contract LensInteractions is NFTin {
         lensHub.burn(profileId);
     }
 
-    function getProfile(uint256 profileId) internal returns (DataTypes.ProfileStruct memory){
+    function getProfile(uint256 profileId)
+        public
+        returns (bool, DataTypes.ProfileStruct memory)
+    {
         (bool success, bytes memory data) = lensAddress.call(
-            abi.encodeWithSignature(
-                "getProfile(uint256)",
-                profileId
-            )
+            abi.encodeWithSignature("getProfile(uint256)", profileId)
+        );
+
+        return (success, abi.decode(data, (DataTypes.ProfileStruct)));
+    }
+
+    function getPub(uint256 profileId, uint256 pubId)
+        public
+        returns (DataTypes.PublicationStruct memory)
+    {
+        (bool success, bytes memory data) = lensAddress.call(
+            abi.encodeWithSignature("getPub(uint256,uint256)", profileId, pubId)
         );
         require(success, "Transaction failed");
 
-        return abi.decode(data, (DataTypes.ProfileStruct));
+        return abi.decode(data, (DataTypes.PublicationStruct));
+    }
+
+    function getPubType(uint256 profileId, uint256 pubId)
+        public
+        returns (bool, DataTypes.PubType)
+    {
+        (bool success, bytes memory data) = lensAddress.call(
+            abi.encodeWithSignature(
+                "getPubType(uint256,uint256)",
+                profileId,
+                pubId
+            )
+        );
+
+        return (success, abi.decode(data, (DataTypes.PubType)));
     }
 }
