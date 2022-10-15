@@ -90,8 +90,9 @@ contract LensInteractions is NFTinStorage {
             )
         );
 
-        return (success, uint256(bytes32(data))
-            // abi.decode(data, (uint256))
+        return (success, 
+        //uint256(bytes32(data))
+             abi.decode(data, (uint256))
         );
     }
 

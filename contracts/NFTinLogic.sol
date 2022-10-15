@@ -18,9 +18,13 @@ contract NFTinLogic is LensInteractions {
     function setPost(DataTypes.PostData calldata vars) external returns(uint256){
         (bool success, uint256 _postId) = post(vars);
         require(success, "Transaction failed");
-        //profiles[vars.profileId].posts[_postId].post = getPub(vars.profileId, _postId);
+        posts[vars.profileId][_postId].post = getPub(vars.profileId, _postId);
 
         return _postId;
+    }
+
+    function addRating(uint256 _profileId) internal {
+        profiles[_profileId].profileRating++;
     }
     // function importPub(uint256 _profileId, uint256 _pubId) external {         //remove ???
     //     profiles[_profileId].posts[_pubId].post = getPub(_profileId, _pubId);

@@ -12,6 +12,7 @@ contract NFTinStorage{
     mapping (address => bool) public withProfile;
     mapping (uint256 => uint) public rating;       //???
     mapping (uint256 => ProfileInfo) public profiles;
+    mapping (uint256 => mapping(uint256 => Posts)) public posts;
 
     struct ProfileInfo{
         address profileOwner;
