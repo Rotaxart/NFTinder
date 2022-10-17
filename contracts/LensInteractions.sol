@@ -91,27 +91,38 @@ contract LensInteractions is NFTinStorage {
         );
 
         return (success, 
-        //uint256(bytes32(data))
+        
              abi.decode(data, (uint256))
         );
     }
 
-    function postWithSig(DataTypes.PostWithSigData calldata vars) external {
-        lensHub.postWithSig(vars);
+    // function postWithSig(DataTypes.PostWithSigData calldata vars) external {
+    // }
+
+    function comment(DataTypes.CommentData calldata vars) internal returns(bool, uint256){
+        (bool success, bytes memory data) = lensAddress.call(
+            abi.encodeWithSignature(
+                "comment((uint256,string,uint256,uint256,bytes,address,bytes,address,bytes))",
+                vars
+            )
+        );
+        return (success, abi.decode(data, (uint256)));
     }
 
-    function comment(DataTypes.CommentData calldata vars) external {
-        lensHub.comment(vars);
-    }
+    // function commentWithSig(DataTypes.CommentWithSigData calldata vars)
+    //     external
+    // {
+    //     lensHub.commentWithSig(vars);
+    // }
 
-    function commentWithSig(DataTypes.CommentWithSigData calldata vars)
-        external
-    {
-        lensHub.commentWithSig(vars);
-    }
-
-    function mirror(DataTypes.MirrorData calldata vars) external {
-        lensHub.mirror(vars);
+    function mirror(DataTypes.MirrorData calldata vars) internal returns(bool, uint256) {
+        (bool success, bytes memory data) = lensAddress.call(
+            abi.encodeWithSignature(
+                "mirror((uint256,,uint256,uint256,bytes,address,bytes))",
+                vars
+            )
+        );
+        return (success, abi.decode(data, (uint256)));
     }
 
     function mirrorWithSig(DataTypes.MirrorWithSigData calldata vars) external {
@@ -152,16 +163,16 @@ contract LensInteractions is NFTinStorage {
         lensHub.burn(profileId);
     }
 
-    function getProfile(uint256 profileId)
-        public
-        returns (bool, DataTypes.ProfileStruct memory)
-    {
-        (bool success, bytes memory data) = lensAddress.call(
-            abi.encodeWithSignature("getProfile(uint256)", profileId)
-        );
+    // function getProfile(uint256 profileId)
+    //     public
+    //     returns (bool, DataTypes.ProfileStruct memory)
+    // {
+    //     (bool success, bytes memory data) = lensAddress.call(
+    //         abi.encodeWithSignature("getProfile(uint256)", profileId)
+    //     );
 
-        return (success, abi.decode(data, (DataTypes.ProfileStruct)));
-    }
+    //     return (success, abi.decode(data, (DataTypes.ProfileStruct)));
+    // }
 
     function getPub(uint256 profileId, uint256 pubId)
         public
