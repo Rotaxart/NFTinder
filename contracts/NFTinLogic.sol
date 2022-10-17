@@ -7,10 +7,10 @@ import {DataTypes} from "./DataTypes.sol";
 
 contract NFTinLogic is LensInteractions {
     function onboardNewProfile(uint256 _profileId) external {
-        (bool success, DataTypes.ProfileStruct memory _profile) = getProfile(
-            _profileId
-        );
-        require(success, "Transaction failed");
+        // (bool success, DataTypes.ProfileStruct memory _profile) = getProfile(
+        //     _profileId
+        // );
+        // require(success, "Transaction failed");
         profiles[msg.sender] = _profileId;
         // profiles[_profileId].profile = _profile;
         // isOnboarded[msg.sender] = true;
@@ -22,7 +22,7 @@ contract NFTinLogic is LensInteractions {
         returns (uint256)
     {
         (bool success, uint256 _postId) = post(vars);
-        require(success && _postId != 0, "Transaction failed");
+        require(success, "Transaction failed");
 
         postList[vars.profileId].push(_postId);
 
@@ -31,7 +31,7 @@ contract NFTinLogic is LensInteractions {
 
     function setComment(DataTypes.CommentData calldata vars)
         external
-        profileOwner(vars.profileId)
+         profileOwner(vars.profileId)
     {
         bool pubExist;
         for (uint256 i = 0; i < postList[vars.profileIdPointed].length; i++) {
@@ -49,9 +49,9 @@ contract NFTinLogic is LensInteractions {
         _comment.pubId = _commentId;
         _comment.pubIdPointed = vars.pubIdPointed;
 
-        posts[vars.profileIdPointed][vars.pubIdPointed]
-            .comments
-            .push(_comment);
+        // posts[vars.profileIdPointed][vars.pubIdPointed]
+        //     .comments
+        //     .push(_comment);
 
         posts[vars.profileIdPointed][vars.pubIdPointed].commentsCount++;
 

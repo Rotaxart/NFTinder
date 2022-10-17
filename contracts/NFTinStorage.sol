@@ -52,7 +52,7 @@ contract NFTinStorage{
     }
 
     modifier profileOwner(uint256 _profileId){
-        require(profiles[msg.sender] == _profileId || msg.sender == signer, "Not an owner");
+        require(profiles[msg.sender] == _profileId, "Not an owner");
         _;
     }
 }
