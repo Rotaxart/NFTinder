@@ -9,7 +9,7 @@ const hre = require("hardhat");
 async function main() {
 
   const NFTinLogic = await hre.ethers.getContractFactory("NFTinLogic");
-  const nFTinLogic = await nFTinLogic.deploy();
+  const nFTinLogic = await NFTinLogic.deploy();
 
   await nFTinLogic.deployed();
 

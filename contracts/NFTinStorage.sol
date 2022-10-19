@@ -10,13 +10,17 @@ contract NFTinStorage {
     address signer;
     mapping(uint256 => uint256) public rating; //???
     mapping(address => uint256) public profiles; //wallet => profile
-    mapping(uint256 => Posts[]) public posts; // profile => post
+    // mapping(uint256 => Posts[]) public posts; // profile => post
     mapping(uint256 => uint256[]) public postList; //profile => [postId]
     mapping(uint256 => uint256[]) public collections; //profile => posts
     mapping(uint256 => mapping(uint256 => Comments[])) public comments; //profile => post => comments[]
     mapping(uint256 => Mirrors[]) public mirrors; //profile => mirrors
+    mapping(uint256 => mapping(uint256 => mapping(uint256 => bool)))
+        public likes; //profile => post => profile => like
+    mapping(uint256 => mapping(uint256 => uint256)) public likesCount; //profile => pub => count
 
     struct Mirrors {
+        uint256 mirrorId;
         uint256 profileIdPointed;
         uint256 pubIdPointed;
     }
@@ -26,17 +30,6 @@ contract NFTinStorage {
         uint256 profileIdPointed; //??
         uint256 pubId;
         uint256 pubIdPointed;
-    }
-
-    struct Posts {
-        uint256 postRating; //???
-        uint256 commentsCount;
-        uint256 likesCount;
-        uint256 mirrorsCount;
-        Comments[] comments;
-        mapping(uint256 => bool) likes; //profileId
-        // mapping (uint256 => uint256[]) comments; //profile => comments
-        mapping(uint256 => uint256) mirrors; // profile => mirror
     }
 
     modifier profileOwner(uint256 _profileId) {
@@ -49,8 +42,7 @@ contract NFTinStorage {
         bool _pubExist;
         for (uint256 i = 0; i < _postList.length; i++) {
             // need gas op
-            if (_postList[i] == _pubIdPointed)
-                _pubExist = true;
+            if (_postList[i] == _pubIdPointed) _pubExist = true;
         }
         require(_pubExist, "Pub doesn`t exist");
         _;
@@ -75,12 +67,16 @@ contract NFTinStorage {
         address indexed _profileAddress,
         DataTypes.MirrorData indexed _data
     );
+
+    event liked(
+        address indexed _profileAddress,
+        uint256 indexed _profileIdPointed,
+        uint256 indexed _pubIdPointed
+    );
 }
 
 // todo:
 // write tests
-// remove not needed functions
-// rating logic
 // revards logic
 // control mechanism
 // owner, profile owner

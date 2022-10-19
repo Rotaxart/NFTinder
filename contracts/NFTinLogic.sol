@@ -4,8 +4,9 @@ pragma solidity ^0.8.10;
 
 import {LensInteractions} from "./LensInteractions.sol";
 import {DataTypes} from "./DataTypes.sol";
+import {INFTinLogic} from "./INFTinLogic.sol";
 
-contract NFTinLogic is LensInteractions {
+contract NFTinLogic is LensInteractions, INFTinLogic{
     function onboardNewProfile(uint256 _profileId) external {
         profiles[msg.sender] = _profileId;
         emit profileOnboarded(msg.sender, _profileId);
@@ -18,14 +19,14 @@ contract NFTinLogic is LensInteractions {
         (bool success, uint256 _postId) = post(vars);
         require(success, "Transaction failed");
         postList[vars.profileId].push(_postId);
+        emit posted(msg.sender, vars);
     }
 
     function setComment(DataTypes.CommentData calldata vars)
         external
-         profileOwner(vars.profileId)
-        // pubExist(vars.profileIdPointed, vars.pubIdPointed)
+        profileOwner(vars.profileId)
+        pubExist(vars.profileIdPointed, vars.pubIdPointed)
     {
-        
         (bool success, uint256 _commentId) = comment(vars);
         require(success, "transaction failed");
 
@@ -35,8 +36,9 @@ contract NFTinLogic is LensInteractions {
         _comment.pubId = _commentId;
         _comment.pubIdPointed = vars.pubIdPointed;
 
-         comments[vars.profileIdPointed][vars.pubIdPointed].push(_comment);
+        comments[vars.profileIdPointed][vars.pubIdPointed].push(_comment);
         addRating(vars.profileIdPointed);
+        emit commented(msg.sender, vars);
     }
 
     function setMirror(DataTypes.MirrorData calldata vars)
@@ -45,49 +47,66 @@ contract NFTinLogic is LensInteractions {
         pubExist(vars.profileIdPointed, vars.pubIdPointed)
     {
         (bool success, uint256 _mirrorId) = mirror(vars);
-        require(success && _mirrorId != 0, "transaction failed");
-
-        posts[vars.profileIdPointed][vars.pubIdPointed].mirrors[
-            vars.profileId
-        ] = _mirrorId;
-
-        posts[vars.profileIdPointed][vars.pubIdPointed].mirrorsCount++;
+        require(success, "transaction failed");
 
         Mirrors memory _mirror;
         _mirror.profileIdPointed = vars.profileIdPointed;
         _mirror.pubIdPointed = vars.pubIdPointed;
+        _mirror.mirrorId = _mirrorId;
         mirrors[vars.profileId].push(_mirror);
 
         addRating(vars.profileIdPointed);
+        emit mirrored(msg.sender, vars);
     }
 
     function setLike(
         uint256 _profileId,
         uint256 _profileIdPointed,
         uint256 _postId
-    ) external profileOwner(_profileId) {
+    ) external profileOwner(_profileId) pubExist(_profileIdPointed, _postId) {
         require(
-            posts[_profileIdPointed][_postId].likes[_profileId],
+            !likes[_profileIdPointed][_postId][_profileId],
             "Like setted yet"
         );
-        posts[_profileIdPointed][_postId].likes[_profileId] = true;
-        posts[_profileIdPointed][_postId].likesCount++;
+        likes[_profileIdPointed][_postId][_profileId] = true;
+        likesCount[_profileIdPointed][_postId]++;
         addRating(_profileIdPointed);
+        emit liked(msg.sender, _profileIdPointed, _postId);
     }
 
-    function getPostList(uint256 _profileId) public view returns(uint256[] memory){
+    function getPostList(uint256 _profileId)
+        external
+        view
+        returns (uint256[] memory)
+    {
         return postList[_profileId];
+    }
+
+    function getMirrors(uint256 _profileId)
+        external
+        view
+        returns (Mirrors[] memory)
+    {
+        return mirrors[_profileId];
     }
 
     // function getPost(uint256 _profileId, uint256 _pubId) public view returns (Posts calldata){
     //     return posts[_profileId][_pubId];
     // }
 
-    function getComments(uint256 _profileId, uint256 _postId) external view returns(Comments[] memory){
+    function getComments(uint256 _profileId, uint256 _postId)
+        external
+        view
+        returns (Comments[] memory)
+    {
         return comments[_profileId][_postId];
     }
 
-    function getProfile(address _profileAddress) external view returns(uint256){
+    function getProfile(address _profileAddress)
+        external
+        view
+        returns (uint256)
+    {
         return profiles[_profileAddress];
     }
 
@@ -95,31 +114,4 @@ contract NFTinLogic is LensInteractions {
         rating[_profile]++;
     }
 
-    // function importPub(uint256 _profileId, uint256 _pubId) external {         //remove ???
-    //     profiles[_profileId].posts[_pubId].post = getPub(_profileId, _pubId);
-    //     profiles[_profileId].posts[_pubId].pubType = getPubType(
-    //         _profileId,
-    //         _pubId
-    //     );
-    // }
-
-    // function userInfo(address _user) external view returns (bool, bool) {  //remove ???
-    //     return (isOnboarded[_user], withProfile[_user]);
-    // }
-
-    // function _setRating(uint256 _profile, uint256 _newRating) external {
-    //     //external by develop
-    //     rating[_profile] = _newRating;
-    //     profiles[_profile].profileRating = _newRating;
-    // }
-
-    // function _setProfile(ProfileInfo calldata _profile, uint256 _id) external {
-    //     //external by develop
-    //     profiles[_id] = _profile;
-    // }
-
-    // function _setLike(uint256 _postNum, uint256 _profile) external {     /// ???
-    //     //external by develop
-    //     // profiles[_profile].posts[_postNum].likes++;
-    // }
 }
