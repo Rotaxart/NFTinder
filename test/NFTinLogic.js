@@ -179,8 +179,14 @@ describe("NFTinLogic", function () {
       await nFTinLogic.connect(user2).setLike(1, 1, postCount);
       const like = await nFTinLogic.likes(1, postCount, 1);
       const likesCount = await nFTinLogic.likesCount(1, postCount);
+
+      const pubRating = await nFTinLogic.pubRating(1, postCount);
+      console.log({pubRating});
+
       expect(like).to.eq(true);
       expect(likesCount).to.eq(1);
+
+
     });
   });
 });

@@ -18,6 +18,8 @@ contract NFTinStorage {
     mapping(uint256 => mapping(uint256 => mapping(uint256 => bool)))
         public likes; //profile => post => profile => like
     mapping(uint256 => mapping(uint256 => uint256)) public likesCount; //profile => pub => count
+    mapping(uint256 => mapping(uint256 => uint256)) public pubRating;
+    mapping(uint256 => uint256[]) public activityPerDay;
 
     struct Mirrors {
         uint256 mirrorId;
@@ -45,6 +47,24 @@ contract NFTinStorage {
             if (_postList[i] == _pubIdPointed) _pubExist = true;
         }
         require(_pubExist, "Pub doesn`t exist");
+        _;
+    }
+
+    modifier activityCount(uint256 _profileId) {
+        uint256 _activites;
+        if (activityPerDay[_profileId].length > 24) {
+            for (
+                uint256 j = activityPerDay[_profileId].length - 25;
+                j < activityPerDay[_profileId].length;
+                j++
+            ) {
+                if (activityPerDay[_profileId][j] > block.timestamp - 1 days) {
+                    _activites++;
+                }
+            }
+        
+        require(_activites > 0, "No more activities");
+        }
         _;
     }
 

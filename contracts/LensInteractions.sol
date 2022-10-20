@@ -18,7 +18,7 @@ contract LensInteractions is NFTinStorage {
     }
 
     function post(DataTypes.PostData calldata vars)
-        public
+        internal
         returns (bool, uint256)
     {
         (bool success, bytes memory data) = lensAddress.call(
@@ -61,7 +61,7 @@ contract LensInteractions is NFTinStorage {
         uint256 profileId,
         uint256 pubId,
         bytes calldata data
-    ) external {
+    ) internal {
         lensHub.collect(profileId, pubId, data);
     }
 }

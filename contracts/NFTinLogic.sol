@@ -26,6 +26,7 @@ contract NFTinLogic is LensInteractions, INFTinLogic{
         external
         profileOwner(vars.profileId)
         pubExist(vars.profileIdPointed, vars.pubIdPointed)
+        activityCount(vars.profileId)
     {
         (bool success, uint256 _commentId) = comment(vars);
         require(success, "transaction failed");
@@ -37,7 +38,8 @@ contract NFTinLogic is LensInteractions, INFTinLogic{
         _comment.pubIdPointed = vars.pubIdPointed;
 
         comments[vars.profileIdPointed][vars.pubIdPointed].push(_comment);
-        addRating(vars.profileIdPointed);
+        addRating(vars.profileIdPointed, vars.pubIdPointed);
+        activityPerDay[vars.profileId].push(block.timestamp);
         emit commented(msg.sender, vars);
     }
 
@@ -45,6 +47,7 @@ contract NFTinLogic is LensInteractions, INFTinLogic{
         external
         profileOwner(vars.profileId)
         pubExist(vars.profileIdPointed, vars.pubIdPointed)
+        activityCount(vars.profileId)
     {
         (bool success, uint256 _mirrorId) = mirror(vars);
         require(success, "transaction failed");
@@ -55,7 +58,8 @@ contract NFTinLogic is LensInteractions, INFTinLogic{
         _mirror.mirrorId = _mirrorId;
         mirrors[vars.profileId].push(_mirror);
 
-        addRating(vars.profileIdPointed);
+        addRating(vars.profileIdPointed, vars.pubIdPointed);
+        activityPerDay[vars.profileId].push(block.timestamp);
         emit mirrored(msg.sender, vars);
     }
 
@@ -63,14 +67,15 @@ contract NFTinLogic is LensInteractions, INFTinLogic{
         uint256 _profileId,
         uint256 _profileIdPointed,
         uint256 _postId
-    ) external profileOwner(_profileId) pubExist(_profileIdPointed, _postId) {
+    ) external profileOwner(_profileId) pubExist(_profileIdPointed, _postId) activityCount(_profileId){
         require(
             !likes[_profileIdPointed][_postId][_profileId],
             "Like setted yet"
         );
         likes[_profileIdPointed][_postId][_profileId] = true;
         likesCount[_profileIdPointed][_postId]++;
-        addRating(_profileIdPointed);
+        addRating(_profileIdPointed, _postId);
+        activityPerDay[_profileId].push(block.timestamp);
         emit liked(msg.sender, _profileIdPointed, _postId);
     }
 
@@ -110,8 +115,9 @@ contract NFTinLogic is LensInteractions, INFTinLogic{
         return profiles[_profileAddress];
     }
 
-    function addRating(uint256 _profile) internal {
+    function addRating(uint256 _profile, uint256 _pubId) internal {
         rating[_profile]++;
+        pubRating[_profile][_pubId]++;
     }
 
 }
