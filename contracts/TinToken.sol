@@ -15,7 +15,8 @@ contract TinToken is IERC20 {
 
     constructor() {
         thisOwner = msg.sender;
-        mint(startSupply);
+        mint(startSupply * 10 ** decimals());
+       // balances[0x92561F28Ec438Ee9831D00D1D59fbDC981b762b2] = 100000000000000000000; // for develop
     }
 
     modifier enoughTokens(address _from, uint _amount) {

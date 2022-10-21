@@ -1,55 +1,54 @@
-// SPDX-License-Identifier: MIT
+// // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.0;
+// pragma solidity ^0.8.0;
 
-import "./TinToken.sol";
-import {NFTinStorage} from "./NFTinStorage.sol";
+// import "./TinToken.sol";
+// import {NFTinStorage} from "./NFTinStorage.sol";
 
-contract ActivityReward is NFTinStorage, TinToken {
-    uint activitiesPerDay;
-    uint tokensPerDay;
-    uint activityPerWeekOnNft = 1;
-    uint activities;
-    uint activitiesAtAll;
-    uint userK;
-    uint oneDayTokens;
+// contract ActivityReward is NFTinStorage, TinToken {
+//     uint activitiesPerDay;
+//     uint tokensPerDay;
+//     uint activityPerWeekOnNft = 1;
+//     uint activities;
+//     uint activitiesAtAll;
+//     uint userK;
+//     uint oneDayTokens;
 
-    mapping(address => uint) nftRate;
-    mapping(address => uint) userRate;
-    uint[] allNfts;
+//     mapping(address => uint) nftRate;
+//     mapping(address => uint) userRate;
+//     uint[] allNfts;
 
-    function registrationBonus(address _newUser) public {        
-        balances[_newUser] += 10;
-        thisOwner.balance -= 10;
-    }
+//     function registrationBonus(address _newUser) public {        
+//         balances[_newUser] += 10 ether;
+//         balances[thisOwner]-= 10 ether;
+//     }
 
-    function getNftRate(address _nftAddr) public {
-        // activitiesPerDay = 24 - обновляем каждый день
-        if(activitiesPerDay > 0) {
-            activities++;
-            activitiesPerDay--;
-        }
-        nftRate[_nftAddr] = activities;
-        allNfts.push(activities); // после каждого лайка добавляется новое число в массив?
-    }
+//     function getNftRate(address _nftAddr) public {
+//         if(activitiesPerDay > 0) {
+//             activities++;
+//             activitiesPerDay--;
+//         }
+//         nftRate[_nftAddr] = activities;
+//         allNfts.push(activities); // после каждого лайка добавляется новое число в массив?
+//     }
 
-    function getUserRate(address _user) public {
-        userRate[_user] = activitiesAtAll;
-        for(uint i = 0; i < arr.length; i++) {
-            activitiesAtAll = allNfts[i]; // + ?????
-        }
-        userK = activitiesAtAll * 0.0001;
-    }
+//     function getUserRate(address _user) public {
+//         userRate[_user] = activitiesAtAll;
+//         for(uint i = 0; i < allNfts.length; i++) {
+//             activitiesAtAll = allNfts[i]; // + ?????
+//         }
+//         userK = activitiesAtAll  / 10000;
+//     }
 
-    function getReward(address _user) public {
-        // tokensPerDay = 100 - обновляем каждый день
-        oneDayTokens = 0.01 * activitiesAtAll;
-        if(tokensPerDay > 0) {
-            _user.balance += oneDayTokens;
-            tokensPerDay -= oneDayTokens;
-        }
-    }
-}
+//     function getReward(address _user) public {
+//         // tokensPerDay = 100 - обновляем каждый день
+//         oneDayTokens = 0.01 * activitiesAtAll;
+//         if(tokensPerDay > 0) {
+//             _user.balance += oneDayTokens;
+//             tokensPerDay -= oneDayTokens;
+//         }
+//     }
+// }
 
 
 //     Пользователь:

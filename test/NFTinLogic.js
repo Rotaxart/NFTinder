@@ -79,9 +79,18 @@ describe("NFTinLogic", function () {
       const lens = await loadFixture(connectionToLens);
       await lens.connect(user2).setDispatcher(1, nFTinLogic.address);
       await nFTinLogic.connect(user2).onboardNewProfile(1);
+      //await nFTinLogic.connect(owner).transfer(user2.address, 100000000000)
+      const balance = await nFTinLogic.balanceOf(user2.address);
+      console.log({balance})
       await nFTinLogic.connect(user2).setPost(postStruct);
       const postCount = await lens.connect(user2).getPubCount(1);
       const pub = await nFTinLogic.getPostList(1);
+
+      const balance2 = await nFTinLogic.balanceOf(user2.address);
+      const balance3 = await nFTinLogic.balanceOf(owner.address);
+      console.log({balance3})
+
+      console.log({balance2})
       expect(pub.toString()).to.eq(postCount.toString());
     });
 

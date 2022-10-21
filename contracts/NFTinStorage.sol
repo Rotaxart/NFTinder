@@ -19,7 +19,18 @@ contract NFTinStorage {
         public likes; //profile => post => profile => like
     mapping(uint256 => mapping(uint256 => uint256)) public likesCount; //profile => pub => count
     mapping(uint256 => mapping(uint256 => uint256)) public pubRating;
-    mapping(uint256 => uint256[]) public activityPerDay;
+    mapping(uint256 => uint256[]) public activityPerDay; //profile => timestamp
+    //mapping(uint256 => uint256) public tokensPerDay; //??
+    mapping(uint256 => uint256) public rewardBalances; //profile => avalable rewards    
+    mapping(uint256 => uint256[]) public rewardsTime;   //profile => timestamp[]
+    mapping(uint256 => uint256[]) public rewardsValue; //profile => value[]
+    mapping(uint256 => uint256) public lastRewardRating;
+
+
+
+    //balanse
+    //basalnse today
+    //timestamp
 
     struct Mirrors {
         uint256 mirrorId;
@@ -62,11 +73,12 @@ contract NFTinStorage {
                     _activites++;
                 }
             }
-        
-        require(_activites > 0, "No more activities");
+
+            require(_activites > 0, "No more activities");
         }
         _;
     }
+
 
     event profileOnboarded(
         address indexed _profileAddress,

@@ -5,10 +5,13 @@ pragma solidity ^0.8.10;
 import {LensInteractions} from "./LensInteractions.sol";
 import {DataTypes} from "./DataTypes.sol";
 import {INFTinLogic} from "./INFTinLogic.sol";
+import {TinToken} from "./TinToken.sol";
 
-contract NFTinLogic is LensInteractions, INFTinLogic{
+contract NFTinLogic is LensInteractions, TinToken, INFTinLogic {
     function onboardNewProfile(uint256 _profileId) external {
         profiles[msg.sender] = _profileId;
+        balances[msg.sender] += 10 ether;
+        balances[thisOwner] -= 10 ether;
         emit profileOnboarded(msg.sender, _profileId);
     }
 
@@ -16,8 +19,12 @@ contract NFTinLogic is LensInteractions, INFTinLogic{
         external
         profileOwner(vars.profileId)
     {
+        uint256 _cost = getPostCost(vars.profileId);
+        require(balances[msg.sender] >= _cost, "not enough token");
         (bool success, uint256 _postId) = post(vars);
         require(success, "Transaction failed");
+        balances[msg.sender] -= _cost;
+        balances[thisOwner] += _cost;
         postList[vars.profileId].push(_postId);
         emit posted(msg.sender, vars);
     }
@@ -28,8 +35,15 @@ contract NFTinLogic is LensInteractions, INFTinLogic{
         pubExist(vars.profileIdPointed, vars.pubIdPointed)
         activityCount(vars.profileId)
     {
+        uint256 _cost = getActivityCost(
+            vars.profileIdPointed,
+            vars.pubIdPointed
+        );
+          require(balances[msg.sender] >= _cost, "not enough token");
         (bool success, uint256 _commentId) = comment(vars);
         require(success, "transaction failed");
+        balances[msg.sender] -= _cost;
+        balances[thisOwner] += _cost;
 
         Comments memory _comment;
         _comment.profileId = vars.profileId;
@@ -49,9 +63,16 @@ contract NFTinLogic is LensInteractions, INFTinLogic{
         pubExist(vars.profileIdPointed, vars.pubIdPointed)
         activityCount(vars.profileId)
     {
+         uint256 _cost = getActivityCost(
+            vars.profileIdPointed,
+            vars.pubIdPointed
+        );
+          require(balances[msg.sender] >= _cost, "not enough token");
         (bool success, uint256 _mirrorId) = mirror(vars);
         require(success, "transaction failed");
 
+        balances[msg.sender] -= _cost;
+        balances[thisOwner] += _cost;
         Mirrors memory _mirror;
         _mirror.profileIdPointed = vars.profileIdPointed;
         _mirror.pubIdPointed = vars.pubIdPointed;
@@ -67,11 +88,23 @@ contract NFTinLogic is LensInteractions, INFTinLogic{
         uint256 _profileId,
         uint256 _profileIdPointed,
         uint256 _postId
-    ) external profileOwner(_profileId) pubExist(_profileIdPointed, _postId) activityCount(_profileId){
+    )
+        external
+        profileOwner(_profileId)
+        pubExist(_profileIdPointed, _postId)
+        activityCount(_profileId)
+    {
+         uint256 _cost = getActivityCost(
+            _profileIdPointed,
+            _postId
+        );
+          require(balances[msg.sender] >= _cost, "not enough token");
         require(
             !likes[_profileIdPointed][_postId][_profileId],
             "Like setted yet"
         );
+                balances[msg.sender] -= _cost;
+        balances[thisOwner] += _cost;
         likes[_profileIdPointed][_postId][_profileId] = true;
         likesCount[_profileIdPointed][_postId]++;
         addRating(_profileIdPointed, _postId);
@@ -120,4 +153,54 @@ contract NFTinLogic is LensInteractions, INFTinLogic{
         pubRating[_profile][_pubId]++;
     }
 
+    function registrationBonus(address _newUser) public {
+        // ??
+        balances[_newUser] += 10 ether;
+        balances[thisOwner] -= 10 ether;
+    }
+
+    function getReward(uint256 _profileId) public {
+        uint256 rewardsAlready;
+        uint256 rewardAvailable = getRewardValue(_profileId);
+        require(rewardAvailable > 0, "Not available reards");
+        for (uint256 i = 0; i < rewardsTime[_profileId].length; i++) {
+            if (rewardsTime[_profileId][i] > block.timestamp - 1 days) {
+                rewardsAlready += rewardsValue[_profileId][i];
+            }
+        }
+        require(rewardsAlready < 100 ether, "No more rewards today");
+        if (rewardsAlready + rewardAvailable >= 100) {
+            balances[msg.sender] += 100 ether - rewardsAlready;
+        } else {
+            balances[msg.sender] += rewardBalances[_profileId];
+        }
+
+        lastRewardRating[_profileId] = rating[_profileId];
+    }
+
+    function getRewardValue(uint256 _profileId) public view returns (uint256) {
+        uint256 _rating = rating[_profileId] - lastRewardRating[_profileId];
+        return (_rating * 1 ether) / 100;
+    }
+
+    function getPostCost(uint256 _profileId) internal view returns (uint256) {
+        if (rating[_profileId] != 0) {
+            return (rating[_profileId] * 1 ether) / 10000;
+        } else {
+            return 1 ether / 10000;
+        }
+    }
+
+    function getActivityCost(uint256 _profileIdPointed, uint256 _pubIdPointed)
+        internal
+        view
+        returns (uint256)
+    {
+        return (1 ether + pubRating[_profileIdPointed][_pubIdPointed]) / 100;
+    }
 }
+// Стоимость:
+//  цена размещения NFT = 1 токен * UR /10000,
+//  цена 1 актиности = (1 токен + r) / 100
+//  К = 0.0001 * UR,
+//  где K - коэффициент пользователя
