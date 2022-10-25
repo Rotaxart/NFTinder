@@ -9,9 +9,9 @@ import {TinToken} from "./TinToken.sol";
 
 contract NFTinLogic is LensInteractions, TinToken, INFTinLogic {
     function onboardNewProfile(uint256 _profileId) external {
+        require(ownerOf(_profileId) == msg.sender, "not an owner");
         profiles[msg.sender] = _profileId;
-        balances[msg.sender] += 10 ether;
-        balances[thisOwner] -= 10 ether;
+        _registrationBonus(msg.sender);
         emit profileOnboarded(msg.sender, _profileId);
     }
 
@@ -39,7 +39,7 @@ contract NFTinLogic is LensInteractions, TinToken, INFTinLogic {
             vars.profileIdPointed,
             vars.pubIdPointed
         );
-          require(balances[msg.sender] >= _cost, "not enough token");
+        require(balances[msg.sender] >= _cost, "not enough token");
         (bool success, uint256 _commentId) = comment(vars);
         require(success, "transaction failed");
         balances[msg.sender] -= _cost;
@@ -63,11 +63,11 @@ contract NFTinLogic is LensInteractions, TinToken, INFTinLogic {
         pubExist(vars.profileIdPointed, vars.pubIdPointed)
         activityCount(vars.profileId)
     {
-         uint256 _cost = getActivityCost(
+        uint256 _cost = getActivityCost(
             vars.profileIdPointed,
             vars.pubIdPointed
         );
-          require(balances[msg.sender] >= _cost, "not enough token");
+        require(balances[msg.sender] >= _cost, "not enough token");
         (bool success, uint256 _mirrorId) = mirror(vars);
         require(success, "transaction failed");
 
@@ -94,16 +94,13 @@ contract NFTinLogic is LensInteractions, TinToken, INFTinLogic {
         pubExist(_profileIdPointed, _postId)
         activityCount(_profileId)
     {
-         uint256 _cost = getActivityCost(
-            _profileIdPointed,
-            _postId
-        );
-          require(balances[msg.sender] >= _cost, "not enough token");
+        uint256 _cost = getActivityCost(_profileIdPointed, _postId);
+        require(balances[msg.sender] >= _cost, "not enough token");
         require(
             !likes[_profileIdPointed][_postId][_profileId],
             "Like setted yet"
         );
-                balances[msg.sender] -= _cost;
+        balances[msg.sender] -= _cost;
         balances[thisOwner] += _cost;
         likes[_profileIdPointed][_postId][_profileId] = true;
         likesCount[_profileIdPointed][_postId]++;
@@ -128,10 +125,6 @@ contract NFTinLogic is LensInteractions, TinToken, INFTinLogic {
         return mirrors[_profileId];
     }
 
-    // function getPost(uint256 _profileId, uint256 _pubId) public view returns (Posts calldata){
-    //     return posts[_profileId][_pubId];
-    // }
-
     function getComments(uint256 _profileId, uint256 _postId)
         external
         view
@@ -153,13 +146,13 @@ contract NFTinLogic is LensInteractions, TinToken, INFTinLogic {
         pubRating[_profile][_pubId]++;
     }
 
-    function registrationBonus(address _newUser) public {
+    function _registrationBonus(address _newUser) internal {
         // ??
-        balances[_newUser] += 10 ether;
-        balances[thisOwner] -= 10 ether;
+        balances[_newUser] += registrationBonus;
+        balances[thisOwner] -= registrationBonus;
     }
 
-    function getReward(uint256 _profileId) public {
+    function getReward(uint256 _profileId) profileOwner(_profileId) public {
         uint256 rewardsAlready;
         uint256 rewardAvailable = getRewardValue(_profileId);
         require(rewardAvailable > 0, "Not available reards");
@@ -168,26 +161,31 @@ contract NFTinLogic is LensInteractions, TinToken, INFTinLogic {
                 rewardsAlready += rewardsValue[_profileId][i];
             }
         }
-        require(rewardsAlready < 100 ether, "No more rewards today");
-        if (rewardsAlready + rewardAvailable >= 100) {
-            balances[msg.sender] += 100 ether - rewardsAlready;
+        require(rewardsAlready < dailyRewardLimit, "No more rewards today");
+        if (rewardsAlready + rewardAvailable >= 100 ether) {
+            balances[msg.sender] += dailyRewardLimit - rewardsAlready;
+            balances[thisOwner] -= dailyRewardLimit - rewardsAlready;
+            rewardsValue[_profileId].push(dailyRewardLimit - rewardsAlready);
         } else {
-            balances[msg.sender] += rewardBalances[_profileId];
+            balances[msg.sender] += rewardAvailable;
+             balances[thisOwner] -= rewardAvailable;
+            rewardsValue[_profileId].push(rewardAvailable);
         }
-
+        rewardsTime[_profileId].push(block.timestamp);
+        
         lastRewardRating[_profileId] = rating[_profileId];
     }
 
-    function getRewardValue(uint256 _profileId) public view returns (uint256) {
+    function getRewardValue(uint256 _profileId) internal view returns (uint256) {
         uint256 _rating = rating[_profileId] - lastRewardRating[_profileId];
-        return (_rating * 1 ether) / 100;
+        return (_rating * 1 ether) / rewardsScaler;
     }
 
     function getPostCost(uint256 _profileId) internal view returns (uint256) {
         if (rating[_profileId] != 0) {
-            return (rating[_profileId] * 1 ether) / 10000;
+            return (rating[_profileId] * 1 ether) / postPriceScaler;
         } else {
-            return 1 ether / 10000;
+            return 1 ether / postPriceScaler;
         }
     }
 
@@ -196,11 +194,30 @@ contract NFTinLogic is LensInteractions, TinToken, INFTinLogic {
         view
         returns (uint256)
     {
-        return (1 ether + pubRating[_profileIdPointed][_pubIdPointed]) / 100;
+        return (1 ether + pubRating[_profileIdPointed][_pubIdPointed]) / activityPriceScaler;
     }
 }
-// Стоимость:
-//  цена размещения NFT = 1 токен * UR /10000,
-//  цена 1 актиности = (1 токен + r) / 100
+
+//     Пользователь:
+//  r = A1 + A2 + … + An
+//  где r - рейтинг NFT, А - активность (коммент, лайк)
+
+//  UR = r1 + r2 + … + rn,
+//  где UR - рейтинг пользователя, rn - рейтинг каждой NFT
+
 //  К = 0.0001 * UR,
 //  где K - коэффициент пользователя
+
+// Ограничения:
+//  В сутки:
+//  - получить не более 100 токенов
+//  - сделать не более 24 активностей
+//  В неделю:
+//  - не больше 1 активности к одной и той же NFT
+
+// Стоимость:
+//  цена размещения NFT = 1 токен * K
+//  цена 1 актиности = (1 токен + r) / 100
+
+// Награды:
+//  забрать токены = 0.01 * r

@@ -6,8 +6,14 @@ import {DataTypes} from "./DataTypes.sol";
 
 contract NFTinStorage {
     constructor() {}
+    uint256 public registrationBonus = 10 ether;
+    uint256 public postPriceScaler = 10000;
+    uint256 public activityPriceScaler = 100;
+    uint256 public dailyRewardLimit = 100 ether;
+    uint256 public rewardsScaler = 100;
 
     address signer;
+    
     mapping(uint256 => uint256) public rating; //???
     mapping(address => uint256) public profiles; //wallet => profile
     // mapping(uint256 => Posts[]) public posts; // profile => post
@@ -18,19 +24,13 @@ contract NFTinStorage {
     mapping(uint256 => mapping(uint256 => mapping(uint256 => bool)))
         public likes; //profile => post => profile => like
     mapping(uint256 => mapping(uint256 => uint256)) public likesCount; //profile => pub => count
-    mapping(uint256 => mapping(uint256 => uint256)) public pubRating;
+    mapping(uint256 => mapping(uint256 => uint256)) public pubRating; //profile => pub => rating
     mapping(uint256 => uint256[]) public activityPerDay; //profile => timestamp
     //mapping(uint256 => uint256) public tokensPerDay; //??
     mapping(uint256 => uint256) public rewardBalances; //profile => avalable rewards    
     mapping(uint256 => uint256[]) public rewardsTime;   //profile => timestamp[]
     mapping(uint256 => uint256[]) public rewardsValue; //profile => value[]
     mapping(uint256 => uint256) public lastRewardRating;
-
-
-
-    //balanse
-    //basalnse today
-    //timestamp
 
     struct Mirrors {
         uint256 mirrorId;
@@ -69,7 +69,7 @@ contract NFTinStorage {
                 j < activityPerDay[_profileId].length;
                 j++
             ) {
-                if (activityPerDay[_profileId][j] > block.timestamp - 1 days) {
+                if (activityPerDay[_profileId][j] < block.timestamp - 1 days) {
                     _activites++;
                 }
             }

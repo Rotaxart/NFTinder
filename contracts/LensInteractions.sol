@@ -64,4 +64,14 @@ contract LensInteractions is NFTinStorage {
     ) internal {
         lensHub.collect(profileId, pubId, data);
     }
+
+    function ownerOf(uint256 tokenId) internal returns (address){
+        (, bytes memory data) = lensAddress.call(
+            abi.encodeWithSignature(
+                "ownerOf(uint256)",
+                tokenId
+            )
+        );
+        return  abi.decode(data, (address));
+    }
 }

@@ -5,6 +5,7 @@ const {
 const { anyValue } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
 const { expect } = require("chai");
 const { defaultAbiCoder } = require("ethers/lib/utils");
+require("@nomicfoundation/hardhat-chai-matchers");
 const lensProxy = "0x1A1FEe7EeD918BD762173e4dc5EfDB8a78C924A8";
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 const postStruct = [
@@ -36,12 +37,21 @@ describe("NFTinLogic", function () {
   // and reset Hardhat Network to that snapshot in every test.
   async function deployNFTinLogic() {
     // Contracts are deployed using the first signer/account by default
-    const [owner, otherAccount, user1, user2] = await ethers.getSigners();
+    const [owner, otherAccount, user1, user2, user3] =
+      await ethers.getSigners();
 
     const NFTinLogic = await hre.ethers.getContractFactory("NFTinLogic");
     const nFTinLogic = await NFTinLogic.deploy();
     const lensAddress = await nFTinLogic.setLensHubAddress(lensProxy);
-    return { nFTinLogic, owner, otherAccount, lensAddress, user1, user2 };
+    return {
+      nFTinLogic,
+      owner,
+      otherAccount,
+      lensAddress,
+      user1,
+      user2,
+      user3,
+    };
   }
 
   async function connectionToLens() {
@@ -56,7 +66,7 @@ describe("NFTinLogic", function () {
     return lens;
   }
 
-  describe("set lens", () => {
+  describe("Main functions", () => {
     it("Should set the right lensAddress", async function () {
       const { nFTinLogic, lensAddress } = await loadFixture(deployNFTinLogic);
 
@@ -79,18 +89,9 @@ describe("NFTinLogic", function () {
       const lens = await loadFixture(connectionToLens);
       await lens.connect(user2).setDispatcher(1, nFTinLogic.address);
       await nFTinLogic.connect(user2).onboardNewProfile(1);
-      //await nFTinLogic.connect(owner).transfer(user2.address, 100000000000)
-      const balance = await nFTinLogic.balanceOf(user2.address);
-      console.log({balance})
       await nFTinLogic.connect(user2).setPost(postStruct);
       const postCount = await lens.connect(user2).getPubCount(1);
       const pub = await nFTinLogic.getPostList(1);
-
-      const balance2 = await nFTinLogic.balanceOf(user2.address);
-      const balance3 = await nFTinLogic.balanceOf(owner.address);
-      console.log({balance3})
-
-      console.log({balance2})
       expect(pub.toString()).to.eq(postCount.toString());
     });
 
@@ -155,7 +156,9 @@ describe("NFTinLogic", function () {
       await nFTinLogic.connect(user2).setPost(postStruct);
       const postCount = await lens.connect(user2).getPubCount(1);
 
-      await nFTinLogic.connect(user2).setMirror([1, 1, postCount.toString(), [], ZERO_ADDRESS, []]);
+      await nFTinLogic
+        .connect(user2)
+        .setMirror([1, 1, postCount.toString(), [], ZERO_ADDRESS, []]);
       const mirror = await nFTinLogic.getMirrors(1);
       const postCount2 = await lens.connect(user2).getPubCount(1);
       const lensMirror = await lens
@@ -188,14 +191,318 @@ describe("NFTinLogic", function () {
       await nFTinLogic.connect(user2).setLike(1, 1, postCount);
       const like = await nFTinLogic.likes(1, postCount, 1);
       const likesCount = await nFTinLogic.likesCount(1, postCount);
-
       const pubRating = await nFTinLogic.pubRating(1, postCount);
-      console.log({pubRating});
-
       expect(like).to.eq(true);
       expect(likesCount).to.eq(1);
+    });
+  });
 
+  describe("Reward and fees", () => {
+    it("should send registration bonus", async () => {
+      const { nFTinLogic, lensAddress, owner, user2 } = await loadFixture(
+        deployNFTinLogic
+      );
+      const Lens = await hre.ethers.getContractFactory("LensHub", {
+        libraries: {
+          InteractionLogic: "0x0078371BDeDE8aAc7DeBfFf451B74c5EDB385Af7",
+          ProfileTokenURILogic: "0x53369fd4680FfE3DfF39Fc6DDa9CfbfD43daeA2E",
+          PublishingLogic: "0x8858eeB3DfffA017D4BCE9801D340D36Cf895CCf",
+        },
+      });
+      const lens = await Lens.attach(lensProxy);
+      await lens.connect(user2).setDispatcher(1, nFTinLogic.address);
+      await nFTinLogic.connect(user2).onboardNewProfile(1);
+      const balance = await nFTinLogic.balanceOf(user2.address);
+      const bonus = await nFTinLogic.registrationBonus();
+      const ownerBalance = await nFTinLogic.balanceOf(owner.address);
+      const totalSupply = await nFTinLogic.totalSupply();
+      const newOwnerBalance = totalSupply.sub(bonus);
+      expect(balance).to.eq(bonus);
+      expect(ownerBalance).to.eq(newOwnerBalance);
+    });
 
+    it("should get post fee", async () => {
+      const { nFTinLogic, lensAddress, owner, user2 } = await loadFixture(
+        deployNFTinLogic
+      );
+      const Lens = await hre.ethers.getContractFactory("LensHub", {
+        libraries: {
+          InteractionLogic: "0x0078371BDeDE8aAc7DeBfFf451B74c5EDB385Af7",
+          ProfileTokenURILogic: "0x53369fd4680FfE3DfF39Fc6DDa9CfbfD43daeA2E",
+          PublishingLogic: "0x8858eeB3DfffA017D4BCE9801D340D36Cf895CCf",
+        },
+      });
+      const lens = await Lens.attach(lensProxy);
+      await lens.connect(user2).setDispatcher(1, nFTinLogic.address);
+      await nFTinLogic.connect(user2).onboardNewProfile(1);
+      await nFTinLogic.connect(user2).setPost(postStruct);
+      const balance = await nFTinLogic.balanceOf(user2.address);
+      const bonus = await nFTinLogic.registrationBonus();
+      const fee = await hre.ethers.utils
+        .parseEther("1")
+        .div(await nFTinLogic.postPriceScaler());
+      const newBalance = await bonus.sub(fee);
+
+      const ownerBalance = await nFTinLogic.balanceOf(owner.address);
+      const totalSupply = await nFTinLogic.totalSupply();
+      const newOwnerBalance = totalSupply.sub(balance);
+      expect(balance).to.eq(newBalance);
+      expect(ownerBalance).to.eq(newOwnerBalance);
+    });
+
+    it("should get comment fee", async () => {
+      const { nFTinLogic, lensAddress, owner, user2, user3 } =
+        await loadFixture(deployNFTinLogic);
+
+      const Lens = await hre.ethers.getContractFactory("LensHub", {
+        libraries: {
+          InteractionLogic: "0x0078371BDeDE8aAc7DeBfFf451B74c5EDB385Af7",
+          ProfileTokenURILogic: "0x53369fd4680FfE3DfF39Fc6DDa9CfbfD43daeA2E",
+          PublishingLogic: "0x8858eeB3DfffA017D4BCE9801D340D36Cf895CCf",
+        },
+      });
+      const lens = await Lens.attach(lensProxy);
+      await lens.connect(user2).setDispatcher(1, nFTinLogic.address);
+      await lens.connect(user3).setDispatcher(2, nFTinLogic.address);
+      await nFTinLogic.connect(user2).onboardNewProfile(1);
+      await nFTinLogic.connect(user3).onboardNewProfile(2);
+      await nFTinLogic.connect(user2).setPost(postStruct);
+      const bonus = await nFTinLogic.registrationBonus();
+      const fee = await hre.ethers.utils
+        .parseEther("1")
+        .div(await nFTinLogic.activityPriceScaler());
+      const newBalance = await bonus.sub(fee);
+
+      const postCount = await lens.connect(user2).getPubCount(1);
+      await nFTinLogic
+        .connect(user3)
+        .setComment([
+          2,
+          "https://ipfs.io/ipfs/QmbWqxBEKC3P8tqsKc98xmWNzrzDtRLMiMPL8wBuTGsMnR",
+          1,
+          postCount.toString(),
+          [],
+          "0x2D8553F9ddA85A9B3259F6Bf26911364B85556F5",
+          "0x0000000000000000000000000000000000000000000000000000000000000001",
+          ZERO_ADDRESS,
+          [],
+        ]);
+      const balance = await nFTinLogic.balanceOf(user3.address);
+      const balance1 = await nFTinLogic.balanceOf(user2.address);
+      const ownerBalance = await nFTinLogic.balanceOf(owner.address);
+      const totalSupply = await nFTinLogic.totalSupply();
+      const newOwnerBalance = totalSupply.sub(balance.add(balance1));
+      expect(balance).to.eq(newBalance);
+      expect(ownerBalance).to.eq(newOwnerBalance);
+    });
+
+    it("should get mirror fee", async () => {
+      const { nFTinLogic, lensAddress, owner, user2, user3 } =
+        await loadFixture(deployNFTinLogic);
+
+      const Lens = await hre.ethers.getContractFactory("LensHub", {
+        libraries: {
+          InteractionLogic: "0x0078371BDeDE8aAc7DeBfFf451B74c5EDB385Af7",
+          ProfileTokenURILogic: "0x53369fd4680FfE3DfF39Fc6DDa9CfbfD43daeA2E",
+          PublishingLogic: "0x8858eeB3DfffA017D4BCE9801D340D36Cf895CCf",
+        },
+      });
+      const lens = await Lens.attach(lensProxy);
+      await lens.connect(user2).setDispatcher(1, nFTinLogic.address);
+      await lens.connect(user3).setDispatcher(2, nFTinLogic.address);
+      await nFTinLogic.connect(user2).onboardNewProfile(1);
+      await nFTinLogic.connect(user3).onboardNewProfile(2);
+      await nFTinLogic.connect(user2).setPost(postStruct);
+      const bonus = await nFTinLogic.registrationBonus();
+      const fee = await hre.ethers.utils
+        .parseEther("1")
+        .div(await nFTinLogic.activityPriceScaler());
+      const newBalance = await bonus.sub(fee);
+
+      const postCount = await lens.connect(user2).getPubCount(1);
+      await nFTinLogic
+        .connect(user3)
+        .setMirror([2, 1, postCount.toString(), [], ZERO_ADDRESS, []]);
+      const balance = await nFTinLogic.balanceOf(user3.address);
+      const balance1 = await nFTinLogic.balanceOf(user2.address);
+      const ownerBalance = await nFTinLogic.balanceOf(owner.address);
+      const totalSupply = await nFTinLogic.totalSupply();
+      const newOwnerBalance = totalSupply.sub(balance.add(balance1));
+
+      expect(balance).to.eq(newBalance);
+      expect(ownerBalance).to.eq(newOwnerBalance);
+    });
+
+    it("should get rewards", async () => {
+      const { nFTinLogic, lensAddress, owner, user2, user3 } =
+        await loadFixture(deployNFTinLogic);
+
+      const Lens = await hre.ethers.getContractFactory("LensHub", {
+        libraries: {
+          InteractionLogic: "0x0078371BDeDE8aAc7DeBfFf451B74c5EDB385Af7",
+          ProfileTokenURILogic: "0x53369fd4680FfE3DfF39Fc6DDa9CfbfD43daeA2E",
+          PublishingLogic: "0x8858eeB3DfffA017D4BCE9801D340D36Cf895CCf",
+        },
+      });
+      const lens = await Lens.attach(lensProxy);
+      await lens.connect(user2).setDispatcher(1, nFTinLogic.address);
+      await lens.connect(user3).setDispatcher(2, nFTinLogic.address);
+      await nFTinLogic.connect(user2).onboardNewProfile(1);
+      await nFTinLogic.connect(user3).onboardNewProfile(2);
+      await nFTinLogic.connect(user2).setPost(postStruct);
+      const bonus = await nFTinLogic.registrationBonus();
+      const fee = await hre.ethers.utils
+        .parseEther("1")
+        .div(await nFTinLogic.postPriceScaler());
+      const rewards = await hre.ethers.utils
+        .parseEther("2")
+        .div(await nFTinLogic.rewardsScaler());
+      const newBalance = await bonus.sub(fee).add(rewards);
+      const postCount = await lens.connect(user2).getPubCount(1);
+      await nFTinLogic
+        .connect(user3)
+        .setMirror([2, 1, postCount.toString(), [], ZERO_ADDRESS, []]);
+      await nFTinLogic
+        .connect(user3)
+        .setComment([
+          2,
+          "https://ipfs.io/ipfs/QmbWqxBEKC3P8tqsKc98xmWNzrzDtRLMiMPL8wBuTGsMnR",
+          1,
+          postCount.toString(),
+          [],
+          "0x2D8553F9ddA85A9B3259F6Bf26911364B85556F5",
+          "0x0000000000000000000000000000000000000000000000000000000000000001",
+          ZERO_ADDRESS,
+          [],
+        ]);
+      await nFTinLogic.connect(user2).getReward(1);
+      const balance = await nFTinLogic.balanceOf(user2.address);
+      const value = await nFTinLogic.rewardsValue(1, 0);
+      const balance1 = await nFTinLogic.balanceOf(user3.address);
+      const ownerBalance = await nFTinLogic.balanceOf(owner.address);
+      const totalSupply = await nFTinLogic.totalSupply();
+      const newOwnerBalance = totalSupply.sub(balance.add(balance1));
+
+      expect(value).to.eq(rewards);
+      expect(balance).to.eq(newBalance);
+      expect(ownerBalance).to.eq(newOwnerBalance);
+    });
+  });
+  describe("Limits and timelocks", () => {
+    it("should be reverted after 24 activities", async () => {
+      const { nFTinLogic, lensAddress, owner, user2, user3 } =
+        await loadFixture(deployNFTinLogic);
+
+      const Lens = await hre.ethers.getContractFactory("LensHub", {
+        libraries: {
+          InteractionLogic: "0x0078371BDeDE8aAc7DeBfFf451B74c5EDB385Af7",
+          ProfileTokenURILogic: "0x53369fd4680FfE3DfF39Fc6DDa9CfbfD43daeA2E",
+          PublishingLogic: "0x8858eeB3DfffA017D4BCE9801D340D36Cf895CCf",
+        },
+      });
+      const lens = await Lens.attach(lensProxy);
+      await lens.connect(user2).setDispatcher(1, nFTinLogic.address);
+      await lens.connect(user3).setDispatcher(2, nFTinLogic.address);
+      await nFTinLogic.connect(user2).onboardNewProfile(1);
+      await nFTinLogic.connect(user3).onboardNewProfile(2);
+      await nFTinLogic.connect(user2).setPost(postStruct);
+      const bonus = await nFTinLogic.registrationBonus();
+      const fee = await hre.ethers.utils
+        .parseEther("1")
+        .div(await nFTinLogic.activityPriceScaler());
+      const postCount = await lens.connect(user2).getPubCount(1);
+      const newBalance = await bonus.sub(fee);
+
+      for (let i = 0; i <= 24; i++) {
+        await nFTinLogic
+          .connect(user3)
+          .setComment([
+            2,
+            "https://ipfs.io/ipfs/QmbWqxBEKC3P8tqsKc98xmWNzrzDtRLMiMPL8wBuTGsMnR",
+            1,
+            postCount.toString(),
+            [],
+            "0x2D8553F9ddA85A9B3259F6Bf26911364B85556F5",
+            "0x0000000000000000000000000000000000000000000000000000000000000001",
+            ZERO_ADDRESS,
+            [],
+          ]);
+      }
+
+      await expect(
+        nFTinLogic
+          .connect(user3)
+          .setComment([
+            2,
+            "https://ipfs.io/ipfs/QmbWqxBEKC3P8tqsKc98xmWNzrzDtRLMiMPL8wBuTGsMnR",
+            1,
+            postCount.toString(),
+            [],
+            "0x2D8553F9ddA85A9B3259F6Bf26911364B85556F5",
+            "0x0000000000000000000000000000000000000000000000000000000000000001",
+            ZERO_ADDRESS,
+            [],
+          ])
+      ).to.be.rejectedWith("No more activities");
+    });
+
+    it("should not be reverted after 24 activities after 24 hours", async () => {
+      const { nFTinLogic, lensAddress, owner, user2, user3 } =
+        await loadFixture(deployNFTinLogic);
+
+      const Lens = await hre.ethers.getContractFactory("LensHub", {
+        libraries: {
+          InteractionLogic: "0x0078371BDeDE8aAc7DeBfFf451B74c5EDB385Af7",
+          ProfileTokenURILogic: "0x53369fd4680FfE3DfF39Fc6DDa9CfbfD43daeA2E",
+          PublishingLogic: "0x8858eeB3DfffA017D4BCE9801D340D36Cf895CCf",
+        },
+      });
+      const lens = await Lens.attach(lensProxy);
+      await lens.connect(user2).setDispatcher(1, nFTinLogic.address);
+      await lens.connect(user3).setDispatcher(2, nFTinLogic.address);
+      await nFTinLogic.connect(user2).onboardNewProfile(1);
+      await nFTinLogic.connect(user3).onboardNewProfile(2);
+      await nFTinLogic.connect(user2).setPost(postStruct);
+      const bonus = await nFTinLogic.registrationBonus();
+      const fee = await hre.ethers.utils
+        .parseEther("1")
+        .div(await nFTinLogic.activityPriceScaler());
+      const postCount = await lens.connect(user2).getPubCount(1);
+      const newBalance = await bonus.sub(fee);
+
+      for (let i = 0; i <= 24; i++) {
+        await nFTinLogic
+          .connect(user3)
+          .setComment([
+            2,
+            "https://ipfs.io/ipfs/QmbWqxBEKC3P8tqsKc98xmWNzrzDtRLMiMPL8wBuTGsMnR",
+            1,
+            postCount.toString(),
+            [],
+            "0x2D8553F9ddA85A9B3259F6Bf26911364B85556F5",
+            "0x0000000000000000000000000000000000000000000000000000000000000001",
+            ZERO_ADDRESS,
+            [],
+          ]);
+      }
+      // const now = await time.latest();
+      // await time.increaseTo(now + 60 * 60 * 24);
+      await network.provider.send("evm_increaseTime", [60 * 60 * 24]);
+      await expect(
+        nFTinLogic
+          .connect(user3)
+          .setComment([
+            2,
+            "https://ipfs.io/ipfs/QmbWqxBEKC3P8tqsKc98xmWNzrzDtRLMiMPL8wBuTGsMnR",
+            1,
+            postCount.toString(),
+            [],
+            "0x2D8553F9ddA85A9B3259F6Bf26911364B85556F5",
+            "0x0000000000000000000000000000000000000000000000000000000000000001",
+            ZERO_ADDRESS,
+            [],
+          ])
+      ).not.to.be.rejected;
     });
   });
 });
