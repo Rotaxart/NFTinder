@@ -5,7 +5,7 @@ pragma solidity ^0.8.10;
 import {DataTypes} from "./DataTypes.sol";
 import {NFTinStorage} from "./NFTinStorage.sol";
 interface INFTinLogic {
-    function setPost(DataTypes.PostData calldata vars) external;
+    // function setPost(DataTypes.PostData calldata vars) external;
 
     function setComment(DataTypes.CommentData calldata vars) external;
 

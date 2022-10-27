@@ -3,21 +3,23 @@
 pragma solidity ^0.8.10;
 
 import {DataTypes} from "./DataTypes.sol";
-import {ILensInteractions} from "./ILensInteractions.sol";
 import {NFTinStorage} from "./NFTinStorage.sol";
 
 contract LensInteractions is NFTinStorage {
     address public lensAddress;
+    address public tinToken;
+    address public owner;
 
-    ILensInteractions lensHub;
-
-    function setLensHubAddress(address _lensHub) public {
+    function setLensHubAddress(address _lensHub) external {
         //for develop
-        lensHub = ILensInteractions(_lensHub);
         lensAddress = _lensHub;
     }
 
-    function post(DataTypes.PostData calldata vars)
+    function setTinToken(address _tinToken) external {
+        tinToken = _tinToken;
+    }
+
+    function post(DataTypes.PostData memory vars)
         internal
         returns (bool, uint256)
     {
@@ -55,14 +57,6 @@ contract LensInteractions is NFTinStorage {
             )
         );
         return (success, abi.decode(data, (uint256)));
-    }
-
-    function collect(
-        uint256 profileId,
-        uint256 pubId,
-        bytes calldata data
-    ) internal {
-        lensHub.collect(profileId, pubId, data);
     }
 
     function ownerOf(uint256 tokenId) internal returns (address){

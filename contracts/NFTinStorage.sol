@@ -31,6 +31,12 @@ contract NFTinStorage {
     mapping(uint256 => uint256[]) public rewardsTime;   //profile => timestamp[]
     mapping(uint256 => uint256[]) public rewardsValue; //profile => value[]
     mapping(uint256 => uint256) public lastRewardRating;
+    mapping(uint256 => NFTstruct[]) public nfts;
+
+    struct NFTstruct{
+        address nftAddress;
+        uint256 tokenId;
+    }
 
     struct Mirrors {
         uint256 mirrorId;
@@ -112,3 +118,8 @@ contract NFTinStorage {
 // revards logic
 // control mechanism
 // owner, profile owner
+
+
+//profile rating = 100 // 80
+//last reward rating = 80 //60
+//posts rating 10, 20, 30, 40 // 10, 30, 40

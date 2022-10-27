@@ -6,8 +6,16 @@ import {LensInteractions} from "./LensInteractions.sol";
 import {DataTypes} from "./DataTypes.sol";
 import {INFTinLogic} from "./INFTinLogic.sol";
 import {TinToken} from "./TinToken.sol";
+import "../node_modules/@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "../node_modules/@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
+import {NFTsInteractions} from "./NFTsInteractions.sol";
+import "../node_modules/@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-contract NFTinLogic is LensInteractions, TinToken, INFTinLogic {
+contract NFTinLogic is LensInteractions, NFTsInteractions, INFTinLogic {
+    constructor() {
+        owner = msg.sender;
+    }
+
     function onboardNewProfile(uint256 _profileId) external {
         require(ownerOf(_profileId) == msg.sender, "not an owner");
         profiles[msg.sender] = _profileId;
@@ -15,17 +23,32 @@ contract NFTinLogic is LensInteractions, TinToken, INFTinLogic {
         emit profileOnboarded(msg.sender, _profileId);
     }
 
-    function setPost(DataTypes.PostData calldata vars)
-        external
-        profileOwner(vars.profileId)
-    {
+    function setPost(
+        DataTypes.PostData memory vars,
+        address _nftAddress,
+        uint256 _tokenId
+    ) external profileOwner(vars.profileId) {
+        require(
+            isNftOwner(_nftAddress, msg.sender, _tokenId),
+            "Not owner of NFT"
+        );
+        vars.contentURI = getNftUri(_nftAddress, _tokenId);
+
         uint256 _cost = getPostCost(vars.profileId);
-        require(balances[msg.sender] >= _cost, "not enough token");
+        require(
+            IERC20(tinToken).balanceOf(msg.sender) >= _cost,
+            "not enough token"
+        );
         (bool success, uint256 _postId) = post(vars);
         require(success, "Transaction failed");
-        balances[msg.sender] -= _cost;
-        balances[thisOwner] += _cost;
+        getFee(msg.sender, _cost);
+        // balances[msg.sender] -= _cost;
+        // balances[thisOwner] += _cost;
         postList[vars.profileId].push(_postId);
+        NFTstruct memory _nfts;
+        _nfts.nftAddress = _nftAddress;
+        _nfts.tokenId = _tokenId;
+        nfts[vars.profileId].push(_nfts);
         emit posted(msg.sender, vars);
     }
 
@@ -39,11 +62,12 @@ contract NFTinLogic is LensInteractions, TinToken, INFTinLogic {
             vars.profileIdPointed,
             vars.pubIdPointed
         );
-        require(balances[msg.sender] >= _cost, "not enough token");
+        // require(balances[msg.sender] >= _cost, "not enough token");
         (bool success, uint256 _commentId) = comment(vars);
         require(success, "transaction failed");
-        balances[msg.sender] -= _cost;
-        balances[thisOwner] += _cost;
+        getFee(msg.sender, _cost);
+        // balances[msg.sender] -= _cost;
+        // balances[thisOwner] += _cost;
 
         Comments memory _comment;
         _comment.profileId = vars.profileId;
@@ -67,12 +91,12 @@ contract NFTinLogic is LensInteractions, TinToken, INFTinLogic {
             vars.profileIdPointed,
             vars.pubIdPointed
         );
-        require(balances[msg.sender] >= _cost, "not enough token");
+        // require(balances[msg.sender] >= _cost, "not enough token");
         (bool success, uint256 _mirrorId) = mirror(vars);
         require(success, "transaction failed");
-
-        balances[msg.sender] -= _cost;
-        balances[thisOwner] += _cost;
+        getFee(msg.sender, _cost);
+        // balances[msg.sender] -= _cost;
+        // balances[thisOwner] += _cost;
         Mirrors memory _mirror;
         _mirror.profileIdPointed = vars.profileIdPointed;
         _mirror.pubIdPointed = vars.pubIdPointed;
@@ -95,13 +119,14 @@ contract NFTinLogic is LensInteractions, TinToken, INFTinLogic {
         activityCount(_profileId)
     {
         uint256 _cost = getActivityCost(_profileIdPointed, _postId);
-        require(balances[msg.sender] >= _cost, "not enough token");
+        // require(balances[msg.sender] >= _cost, "not enough token");
         require(
             !likes[_profileIdPointed][_postId][_profileId],
             "Like setted yet"
         );
-        balances[msg.sender] -= _cost;
-        balances[thisOwner] += _cost;
+        getFee(msg.sender, _cost);
+        // balances[msg.sender] -= _cost;
+        // balances[thisOwner] += _cost;
         likes[_profileIdPointed][_postId][_profileId] = true;
         likesCount[_profileIdPointed][_postId]++;
         addRating(_profileIdPointed, _postId);
@@ -148,14 +173,35 @@ contract NFTinLogic is LensInteractions, TinToken, INFTinLogic {
 
     function _registrationBonus(address _newUser) internal {
         // ??
-        balances[_newUser] += registrationBonus;
-        balances[thisOwner] -= registrationBonus;
+        (bool success, ) = tinToken.call(
+            abi.encodeWithSignature(
+                "transferFrom(address,address,uint256)",
+                owner,
+                _newUser,
+                registrationBonus
+            )
+        );
+        require(success, "Transaction failed");
+        // balances[_newUser] += registrationBonus;
+        // balances[thisOwner] -= registrationBonus;
     }
 
-    function getReward(uint256 _profileId) profileOwner(_profileId) public {
+    function getFee(address _user, uint256 _amount) internal {
+        (bool success, ) = tinToken.call(
+            abi.encodeWithSignature(
+                "transferFrom(address,address,uint256)",
+                _user,
+                owner,
+                _amount
+            )
+        );
+        require(success, "Transaction failed");
+    }
+
+    function getReward(uint256 _profileId) public profileOwner(_profileId) {
         uint256 rewardsAlready;
         uint256 rewardAvailable = getRewardValue(_profileId);
-        require(rewardAvailable > 0, "Not available reards");
+        require(rewardAvailable > 0, "Not available rewards");
         for (uint256 i = 0; i < rewardsTime[_profileId].length; i++) {
             if (rewardsTime[_profileId][i] > block.timestamp - 1 days) {
                 rewardsAlready += rewardsValue[_profileId][i];
@@ -163,20 +209,59 @@ contract NFTinLogic is LensInteractions, TinToken, INFTinLogic {
         }
         require(rewardsAlready < dailyRewardLimit, "No more rewards today");
         if (rewardsAlready + rewardAvailable >= 100 ether) {
-            balances[msg.sender] += dailyRewardLimit - rewardsAlready;
-            balances[thisOwner] -= dailyRewardLimit - rewardsAlready;
+            _revard(msg.sender, dailyRewardLimit - rewardsAlready);
+            // balances[msg.sender] += dailyRewardLimit - rewardsAlready;
+            // balances[thisOwner] -= dailyRewardLimit - rewardsAlready;
             rewardsValue[_profileId].push(dailyRewardLimit - rewardsAlready);
         } else {
-            balances[msg.sender] += rewardAvailable;
-             balances[thisOwner] -= rewardAvailable;
+           _revard(msg.sender, rewardAvailable);
+            // balances[msg.sender] += rewardAvailable;
+            // balances[thisOwner] -= rewardAvailable;
             rewardsValue[_profileId].push(rewardAvailable);
         }
         rewardsTime[_profileId].push(block.timestamp);
-        
+
         lastRewardRating[_profileId] = rating[_profileId];
     }
 
-    function getRewardValue(uint256 _profileId) internal view returns (uint256) {
+    function _revard(address _user, uint256 _amount) internal{
+        (bool success, ) = tinToken.call(
+            abi.encodeWithSignature(
+                "transferFrom(address,address,uint256)",
+                
+                owner,_user,
+                _amount
+            )
+        );
+        require(success, "Transaction failed");
+    }
+
+    function getRewardValue(uint256 _profileId) internal returns (uint256) {
+        uint256[] memory notOwnerNfts = new uint256[](nfts[_profileId].length);
+        uint256 j;
+
+        for (uint256 i = 0; i < nfts[_profileId].length; i++) {
+            if (
+                !isNftOwner(
+                    nfts[_profileId][i].nftAddress,
+                    msg.sender,
+                    nfts[_profileId][i].tokenId
+                )
+            ) {
+                notOwnerNfts[j] = i;
+                j++;
+            }
+        }
+
+        if(j > 0){
+            for(uint256 i = 0; i < j; i++){
+                // rating[_profileId] = 0;
+                rating[_profileId] = rating[_profileId] - pubRating[_profileId][notOwnerNfts[i]];
+                lastRewardRating[_profileId] = lastRewardRating[_profileId] - pubRating[_profileId][notOwnerNfts[i]];
+                pubRating[_profileId][notOwnerNfts[i]] = 0;
+            }
+        }
+
         uint256 _rating = rating[_profileId] - lastRewardRating[_profileId];
         return (_rating * 1 ether) / rewardsScaler;
     }
@@ -194,7 +279,9 @@ contract NFTinLogic is LensInteractions, TinToken, INFTinLogic {
         view
         returns (uint256)
     {
-        return (1 ether + pubRating[_profileIdPointed][_pubIdPointed]) / activityPriceScaler;
+        return
+            (1 ether + pubRating[_profileIdPointed][_pubIdPointed]) /
+            activityPriceScaler;
     }
 }
 

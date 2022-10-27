@@ -57,7 +57,7 @@ contract TinToken is IERC20 {
     }
 
     function transferFrom(address sender, address recipient, uint amount) public override enoughTokens(sender, amount) {
-        allowances[sender][recipient] -= amount;
+        allowances[sender][msg.sender] -= amount;
         balances[sender] -= amount;
         balances[recipient] += amount;
         emit Transfer(sender, recipient, amount);
