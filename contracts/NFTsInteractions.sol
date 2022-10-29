@@ -9,27 +9,17 @@ contract NFTsInteractions {
     function isNftOwner(
         address _nftAddress,
         address _user,
-        uint256 _tokenId
+        uint256 _tokenId,
+        uint8 _type
     ) internal returns (bool) {
-        (bool success, bytes memory result) = _nftAddress.call(
-            abi.encodeWithSignature(
-                "supportsInterface(bytes4)",
-                type(IERC721).interfaceId
-            )
-        );
-        if (success && abi.decode(result, (bool))) {
+        if (_type == 0) {
             (, bytes memory data) = _nftAddress.call(
                 abi.encodeWithSignature("ownerOf(uint256)", _tokenId)
             );
             return abi.decode(data, (address)) == _user;
         } else {
-            (success, result) = _nftAddress.call(
-                abi.encodeWithSignature(
-                    "supportsInterface(bytes4)",
-                    type(IERC1155).interfaceId
-                )
-            );
-            if (success && abi.decode(result, (bool))) {
+
+            if (_type == 1) {
                 (, bytes memory data) = _nftAddress.call(
                     abi.encodeWithSignature(
                         "balanceOf(address,uint256)",
@@ -40,22 +30,15 @@ contract NFTsInteractions {
                 return abi.decode(data, (uint256)) != 0;
             }
         }
-        require(success, "Can`t check NFTs type");
         return false;
     }
 
-    function getNftUri(address _nftAddress, uint256 _tokenId)
+    function getNftUri(address _nftAddress, uint256 _tokenId, uint8 _type)
         internal
         returns (string memory)
     {
-        (bool success, bytes memory result) = _nftAddress.call(
-            abi.encodeWithSignature(
-                "supportsInterface(bytes4)",
-                type(IERC721).interfaceId
-            )
-        );
 
-        if (success && abi.decode(result, (bool))) {
+        if (_type == 0) {
             (, bytes memory data) = _nftAddress.call(
                 abi.encodeWithSignature("tokenURI(uint256)", _tokenId)
             );

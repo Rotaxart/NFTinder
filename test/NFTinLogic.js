@@ -53,9 +53,6 @@ describe("NFTinLogic", function () {
     const balance = await tinToken.balanceOf(nFTinLogic.address);
     await tinToken.connect(user2).approve(nFTinLogic.address, "1000000000000000000");
     await tinToken.connect(user3).approve(nFTinLogic.address, "1000000000000000000");
-
-    console.log(balance)
-
     const Test721 = await hre.ethers.getContractFactory("Test721");
     const test721 = await Test721.deploy(user2.address);
     // await test721.transferFrom(owner.address, user2.address, 1) ;
@@ -114,7 +111,7 @@ describe("NFTinLogic", function () {
       await lens.connect(user2).setDispatcher(1, nFTinLogic.address);
       await nFTinLogic.connect(user2).onboardNewProfile(1);
       
-      await nFTinLogic.connect(user2).setPost(postStruct, address721, 1);
+      await nFTinLogic.connect(user2).setPost(postStruct, address721, 1, 0);
       const postCount = await lens.connect(user2).getPubCount(1);
       const pub = await nFTinLogic.getPostList(1);
       expect(pub.toString()).to.eq(postCount.toString());
@@ -136,7 +133,7 @@ describe("NFTinLogic", function () {
       await lens.connect(user2).setDispatcher(1, nFTinLogic.address);
 
       await nFTinLogic.connect(user2).onboardNewProfile(1);
-      await nFTinLogic.connect(user2).setPost(postStruct, address721, 1);
+      await nFTinLogic.connect(user2).setPost(postStruct, address721, 1, 0);
       const postCount = await lens.connect(user2).getPubCount(1);
       await nFTinLogic
         .connect(user2)
@@ -178,7 +175,7 @@ describe("NFTinLogic", function () {
       const lens = await Lens.attach(lensProxy);
       await lens.connect(user2).setDispatcher(1, nFTinLogic.address);
       await nFTinLogic.connect(user2).onboardNewProfile(1);
-      await nFTinLogic.connect(user2).setPost(postStruct, address721, 1);
+      await nFTinLogic.connect(user2).setPost(postStruct, address721, 1, 0);
       const postCount = await lens.connect(user2).getPubCount(1);
 
       await nFTinLogic
@@ -211,7 +208,7 @@ describe("NFTinLogic", function () {
       await lens.connect(user2).setDispatcher(1, nFTinLogic.address);
 
       await nFTinLogic.connect(user2).onboardNewProfile(1);
-      await nFTinLogic.connect(user2).setPost(postStruct, address721, 1);
+      await nFTinLogic.connect(user2).setPost(postStruct, address721, 1, 0);
       const postCount = await lens.connect(user2).getPubCount(1);
       await nFTinLogic.connect(user2).setLike(1, 1, postCount);
       const like = await nFTinLogic.likes(1, postCount, 1);
@@ -238,7 +235,6 @@ describe("NFTinLogic", function () {
       await lens.connect(user2).setDispatcher(1, nFTinLogic.address);
       await nFTinLogic.connect(user2).onboardNewProfile(1);
       const balance = await tinToken.balanceOf(user2.address);
-      console.log({balance})
       const bonus = await nFTinLogic.registrationBonus();
       const ownerBalance = await tinToken.balanceOf(owner.address);
       const totalSupply = await tinToken.totalSupply();
@@ -261,7 +257,7 @@ describe("NFTinLogic", function () {
       const lens = await Lens.attach(lensProxy);
       await lens.connect(user2).setDispatcher(1, nFTinLogic.address);
       await nFTinLogic.connect(user2).onboardNewProfile(1);
-      await nFTinLogic.connect(user2).setPost(postStruct, address721, 1);
+      await nFTinLogic.connect(user2).setPost(postStruct, address721, 1, 0);
       const balance = await tinToken.balanceOf(user2.address);
       const bonus = await nFTinLogic.registrationBonus();
       const fee = await hre.ethers.utils
@@ -292,7 +288,7 @@ describe("NFTinLogic", function () {
       await lens.connect(user3).setDispatcher(2, nFTinLogic.address);
       await nFTinLogic.connect(user2).onboardNewProfile(1);
       await nFTinLogic.connect(user3).onboardNewProfile(2);
-      await nFTinLogic.connect(user2).setPost(postStruct, address721, 1);
+      await nFTinLogic.connect(user2).setPost(postStruct, address721, 1, 0);
       const bonus = await nFTinLogic.registrationBonus();
       const fee = await hre.ethers.utils
         .parseEther("1")
@@ -338,7 +334,7 @@ describe("NFTinLogic", function () {
       await lens.connect(user3).setDispatcher(2, nFTinLogic.address);
       await nFTinLogic.connect(user2).onboardNewProfile(1);
       await nFTinLogic.connect(user3).onboardNewProfile(2);
-      await nFTinLogic.connect(user2).setPost(postStruct, address721, 1);
+      await nFTinLogic.connect(user2).setPost(postStruct, address721, 1, 0);
       const bonus = await nFTinLogic.registrationBonus();
       const fee = await hre.ethers.utils
         .parseEther("1")
@@ -375,7 +371,7 @@ describe("NFTinLogic", function () {
       await lens.connect(user3).setDispatcher(2, nFTinLogic.address);
       await nFTinLogic.connect(user2).onboardNewProfile(1);
       await nFTinLogic.connect(user3).onboardNewProfile(2);
-      await nFTinLogic.connect(user2).setPost(postStruct, address721, 1);
+      await nFTinLogic.connect(user2).setPost(postStruct, address721, 1, 0);
       const bonus = await nFTinLogic.registrationBonus();
       const fee = await hre.ethers.utils
         .parseEther("1")
@@ -412,7 +408,7 @@ describe("NFTinLogic", function () {
       await lens.connect(user3).setDispatcher(2, nFTinLogic.address);
       await nFTinLogic.connect(user2).onboardNewProfile(1);
       await nFTinLogic.connect(user3).onboardNewProfile(2);
-      await nFTinLogic.connect(user2).setPost(postStruct, address721, 1);
+      await nFTinLogic.connect(user2).setPost(postStruct, address721, 1, 0);
       const bonus = await nFTinLogic.registrationBonus();
       const fee = await hre.ethers.utils
         .parseEther("1")
@@ -468,7 +464,7 @@ describe("NFTinLogic", function () {
       await lens.connect(user3).setDispatcher(2, nFTinLogic.address);
       await nFTinLogic.connect(user2).onboardNewProfile(1);
       await nFTinLogic.connect(user3).onboardNewProfile(2);
-      await nFTinLogic.connect(user2).setPost(postStruct, address721, 1);
+      await nFTinLogic.connect(user2).setPost(postStruct, address721, 1, 0);
       const bonus = await nFTinLogic.registrationBonus();
       const fee = await hre.ethers.utils
         .parseEther("1")
@@ -525,7 +521,7 @@ describe("NFTinLogic", function () {
       await lens.connect(user3).setDispatcher(2, nFTinLogic.address);
       await nFTinLogic.connect(user2).onboardNewProfile(1);
       await nFTinLogic.connect(user3).onboardNewProfile(2);
-      await nFTinLogic.connect(user2).setPost(postStruct, address721, 1);
+      await nFTinLogic.connect(user2).setPost(postStruct, address721, 1, 0);
       const bonus = await nFTinLogic.registrationBonus();
       const fee = await hre.ethers.utils
         .parseEther("1")
@@ -534,7 +530,7 @@ describe("NFTinLogic", function () {
       const newBalance = await bonus.sub(fee);
 
       for (let i = 0; i <= 24; i++) {
-        await nFTinLogic
+        const tx = await nFTinLogic
           .connect(user3)
           .setComment([
             2,
@@ -547,6 +543,7 @@ describe("NFTinLogic", function () {
             ZERO_ADDRESS,
             [],
           ]);
+          await tx.wait();
       }
       // const now = await time.latest();
       // await time.increaseTo(now + 60 * 60 * 24);
@@ -569,7 +566,7 @@ describe("NFTinLogic", function () {
     });
 
     it("should get 0 rewards after transfer nft", async () => {
-      const { nFTinLogic, lensAddress, owner, user2, user3, tinToken } =
+      const { nFTinLogic, lensAddress, owner, user2, user3,test721,address721, tinToken } =
         await loadFixture(deployNFTinLogic);
 
       const Lens = await hre.ethers.getContractFactory("LensHub", {
@@ -579,19 +576,12 @@ describe("NFTinLogic", function () {
           PublishingLogic: "0x8858eeB3DfffA017D4BCE9801D340D36Cf895CCf",
         },
       });
-
-      const Test721 = await hre.ethers.getContractFactory("Test721");
-    const test721 = await Test721.deploy(user2.address);
-    // await test721.transferFrom(owner.address, user2.address, 1) ;
-
-    const address721 = test721.address
-
       const lens = await Lens.attach(lensProxy);
       await lens.connect(user2).setDispatcher(1, nFTinLogic.address);
       await lens.connect(user3).setDispatcher(2, nFTinLogic.address);
       await nFTinLogic.connect(user2).onboardNewProfile(1);
       await nFTinLogic.connect(user3).onboardNewProfile(2);
-      await nFTinLogic.connect(user2).setPost(postStruct, address721, 1);
+      await nFTinLogic.connect(user2).setPost(postStruct, address721, 1, 0);
       const bonus = await nFTinLogic.registrationBonus();
       const fee = await hre.ethers.utils
         .parseEther("1")
@@ -615,23 +605,18 @@ describe("NFTinLogic", function () {
           ZERO_ADDRESS,
           [],
         ]);
-
-      //await test721.connect(user2).approve(owner.address, 1)
-      await test721.connect(user2).transferFrom(user2.address, owner.address, 1, {gasLimit: 12450000}) ;
-      
-     // await transfer.wait();
-      await nFTinLogic.connect(user2).getReward(1);
-      console.log("ok")
+      const tx = await test721.connect(user2).transferFrom(user2.address, owner.address, 1) ;
+      await tx.wait();
+      const rate0 = await nFTinLogic.getRating(1);
+      const pubrate0 = await nFTinLogic.pubRating(1, postCount)
+      await nFTinLogic.connect(user2).getReward(1);      
       const balance = await tinToken.balanceOf(user2.address);
-      const value = await nFTinLogic.rewardsValue(1, 0);
       const balance1 = await tinToken.balanceOf(user3.address);
       const ownerBalance = await tinToken.balanceOf(owner.address);
       const totalSupply = await tinToken.totalSupply();
       const newOwnerBalance = totalSupply.sub(balance.add(balance1));
-      const rate = await nFTinLogic.rating(1);
-      console.log({rate})
-
-      expect(value).to.eq(rewards);
+      const rate = await nFTinLogic.getRating(1);
+      expect(rate).to.eq(0);
       expect(balance).to.eq(newBalance);
       expect(ownerBalance).to.eq(newOwnerBalance);
     });

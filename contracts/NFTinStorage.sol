@@ -6,6 +6,8 @@ import {DataTypes} from "./DataTypes.sol";
 
 contract NFTinStorage {
     constructor() {}
+uint256 public testVar;  //dev
+
     uint256 public registrationBonus = 10 ether;
     uint256 public postPriceScaler = 10000;
     uint256 public activityPriceScaler = 100;
@@ -36,6 +38,8 @@ contract NFTinStorage {
     struct NFTstruct{
         address nftAddress;
         uint256 tokenId;
+        uint256 postId;
+        nftType nftType;
     }
 
     struct Mirrors {
@@ -49,6 +53,10 @@ contract NFTinStorage {
         uint256 profileIdPointed; //??
         uint256 pubId;
         uint256 pubIdPointed;
+    }
+
+    enum nftType{
+        ERC721, ERC1155
     }
 
     modifier profileOwner(uint256 _profileId) {
