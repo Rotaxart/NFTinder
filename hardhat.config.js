@@ -1,5 +1,6 @@
 require("@nomicfoundation/hardhat-toolbox");
 require("@nomicfoundation/hardhat-chai-matchers");
+require("@nomiclabs/hardhat-etherscan");
 require("dotenv").config();
 // require('@openzeppelin/hardhat-upgrades');
 
@@ -16,11 +17,13 @@ module.exports = {
     mumbai: {
       url: API_URL,
       accounts: [`0x${PRIVATE_KEY}`],
+      
     },
   },
   etherscan: {
     apiKey: {
       polygonMumbai: POLYGON_API_KEY,
     },
+    
   },
 };

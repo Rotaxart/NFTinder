@@ -13,12 +13,10 @@ uint256 public testVar;  //dev
     uint256 public activityPriceScaler = 100;
     uint256 public dailyRewardLimit = 100 ether;
     uint256 public rewardsScaler = 100;
-
-    address signer;
     
     mapping(uint256 => uint256) public rating; //???
     mapping(address => uint256) public profiles; //wallet => profile
-    // mapping(uint256 => Posts[]) public posts; // profile => post
+    mapping(address => bool) public isOnboarded;
     mapping(uint256 => uint256[]) public postList; //profile => [postId]
     mapping(uint256 => uint256[]) public collections; //profile => posts
     mapping(uint256 => mapping(uint256 => Comments[])) public comments; //profile => post => comments[]
@@ -28,12 +26,12 @@ uint256 public testVar;  //dev
     mapping(uint256 => mapping(uint256 => uint256)) public likesCount; //profile => pub => count
     mapping(uint256 => mapping(uint256 => uint256)) public pubRating; //profile => pub => rating
     mapping(uint256 => uint256[]) public activityPerDay; //profile => timestamp
-    //mapping(uint256 => uint256) public tokensPerDay; //??
     mapping(uint256 => uint256) public rewardBalances; //profile => avalable rewards    
     mapping(uint256 => uint256[]) public rewardsTime;   //profile => timestamp[]
     mapping(uint256 => uint256[]) public rewardsValue; //profile => value[]
     mapping(uint256 => uint256) public lastRewardRating;
     mapping(uint256 => NFTstruct[]) public nfts;
+    mapping(uint256 => mapping(uint256 => bool)) public postEnable; //profile => post => on/off
 
     struct NFTstruct{
         address nftAddress;
@@ -122,11 +120,8 @@ uint256 public testVar;  //dev
 }
 
 // todo:
-// write tests
-// revards logic
 // control mechanism
 // owner, profile owner
-
 
 //profile rating = 100 // 80
 //last reward rating = 80 //60
