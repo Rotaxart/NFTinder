@@ -6,9 +6,7 @@ import {DataTypes} from "./DataTypes.sol";
 import {NFTinStorage} from "./NFTinStorage.sol";
 
 contract LensInteractions is NFTinStorage {
-    address public lensAddress;
-    address public tinToken;
-    address public owner;
+
 
     function setLensHubAddress(address _lensHub) external {
         //for develop

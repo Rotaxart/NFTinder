@@ -18,11 +18,11 @@ contract NFTinLogic is LensInteractions, NFTsInteractions, INFTinLogic {
     function onboardNewProfile(uint256 _profileId) external {
         require(ownerOf(_profileId) == msg.sender, "not an owner");
         profiles[msg.sender] = _profileId;
-        if(!isOnboarded[msg.sender]){
+        if (!isOnboarded[msg.sender]) {
             _registrationBonus(msg.sender);
             isOnboarded[msg.sender] = true;
         }
-        emit profileOnboarded(msg.sender, _profileId); 
+        emit profileOnboarded(msg.sender, _profileId);
     }
 
     function setPost(
@@ -151,8 +151,9 @@ contract NFTinLogic is LensInteractions, NFTsInteractions, INFTinLogic {
         lastRewardRating[_profileId] = rating[_profileId];
     }
 
-    function disablePost(uint256 _profileId, uint256 _postId) external
-        // ownerOrAdmin
+    function disablePost(uint256 _profileId, uint256 _postId)
+        external
+    // ownerOrAdmin
     {
         postEnable[_profileId][_postId] = false;
         remooveRating(_profileId, _postId, pubRating[_profileId][_postId]);
@@ -165,8 +166,8 @@ contract NFTinLogic is LensInteractions, NFTsInteractions, INFTinLogic {
     {
         uint256 len = postList[_profileId].length;
         uint256[] memory _listFiltered = new uint256[](len);
-        for(uint256 i = 0; i < len; i++){
-            if(postEnable[_profileId][postList[_profileId][i]]){
+        for (uint256 i = 0; i < len; i++) {
+            if (postEnable[_profileId][postList[_profileId][i]]) {
                 _listFiltered[i] = postList[_profileId][i];
             } else {
                 _listFiltered[i] = 0;

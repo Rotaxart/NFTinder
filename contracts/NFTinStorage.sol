@@ -13,6 +13,9 @@ uint256 public testVar;  //dev
     uint256 public activityPriceScaler = 100;
     uint256 public dailyRewardLimit = 100 ether;
     uint256 public rewardsScaler = 100;
+    address public lensAddress;
+    address public tinToken;
+    address public owner;
     
     mapping(uint256 => uint256) public rating; //???
     mapping(address => uint256) public profiles; //wallet => profile

@@ -28,7 +28,7 @@ const commentStruct = [
   ZERO_ADDRESS,
   [],
 ];
-
+console.log({postStruct})
 const mirrorStruct = [1, 1, 1, [], ZERO_ADDRESS, []];
 
 describe("NFTinLogic", function () {
@@ -74,7 +74,6 @@ describe("NFTinLogic", function () {
     await lens.connect(user3).setDispatcher(2, nFTinLogic.address);
     await nFTinLogic.connect(user2).onboardNewProfile(1);
     await nFTinLogic.connect(user3).onboardNewProfile(2);
-
     return {
       nFTinLogic,
       owner,
@@ -90,22 +89,10 @@ describe("NFTinLogic", function () {
     };
   }
 
-  async function connectionToLens() {
-    const Lens = await hre.ethers.getContractFactory("LensHub", {
-      libraries: {
-        InteractionLogic: "0x0078371BDeDE8aAc7DeBfFf451B74c5EDB385Af7",
-        ProfileTokenURILogic: "0x53369fd4680FfE3DfF39Fc6DDa9CfbfD43daeA2E",
-        PublishingLogic: "0x8858eeB3DfffA017D4BCE9801D340D36Cf895CCf",
-      },
-    });
-    const lens = await Lens.attach(lensProxy);
-    return lens;
-  }
 
   describe("Main functions", () => {
     it("Should set the right lensAddress", async function () {
       const { nFTinLogic, lens } = await loadFixture(deployNFTinLogic);
-
       expect(await nFTinLogic.lensAddress()).to.equal(lensProxy);
     });
 
